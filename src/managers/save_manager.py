@@ -82,3 +82,7 @@ class SavesSystem:
                 variables.append(default_data[index])
 
         return tuple(variables) if len(variables) > 1 else variables[0] if variables else None
+    
+    def save_game_data(self, data_to_save, save_slot_number, file_names):
+        for index, file in enumerate(data_to_save):
+            self.save_data(file, save_slot_number, file_names[index])

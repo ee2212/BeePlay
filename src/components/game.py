@@ -508,6 +508,7 @@ class Game:
 
         if self.player.health <= 0:
             state_manager.change_state(GameState.FOREST)
+            self.add_buttons()
 
     # ________________________________________________________________________
 
