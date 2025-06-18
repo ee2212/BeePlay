@@ -97,3 +97,11 @@ class DrawManager:
             s.set_alpha(128) # translucent
             s.fill((color))
             screen.blit(s, (px, py))
+
+    def draw_bg_image(self, image, screen):  # drawing game
+        bg_image = image
+        bg_image = pygame.transform.scale(
+            bg_image, (screen_width, screen_height))
+        bg_image_rect = bg_image.get_rect()
+        bg_image_rect.center = (screen_width // 2, screen_height // 2)
+        screen.blit(bg_image, (0, 0), bg_image_rect)

@@ -96,8 +96,8 @@ class Game:
                                     position)
                         self.current_room.artifacts.add(artl)
                     self.current_room.visited = True
-                self.draw_prices(self.current_room.prices,
-                                 self.current_room.prices_positions, screen, screen_width, screen_height)
+                draw_manager.draw_prices(self.current_room.prices,
+                                 self.current_room.prices_positions, screen)
                 screen.blit(self.current_room.shopkeeper_image,
                             (screen_width // 2 - 35, screen_height // 2 - 125))
                 self.current_room.artifacts.draw(screen)
@@ -512,13 +512,6 @@ class Game:
         self.handle_button_hover(mouse_pos)
         self.handle_button_click(mouse_pos)
 
-    def draw_bg_image(self, image):  # drawing game
-        bg_image = image
-        bg_image = pygame.transform.scale(
-            bg_image, (screen_width, screen_height))
-        bg_image_rect = bg_image.get_rect()
-        bg_image_rect.center = (screen_width // 2, screen_height // 2)
-        screen.blit(bg_image, (0, 0), bg_image_rect)
 
     def run(self):  # running game
         while self.running:
@@ -531,23 +524,23 @@ class Game:
             match state_manager.current_state():
                 case GameState.MAIN_MENU:
                     bg_image = pygame.image.load("./core/assets/фоны/мэню.png")
-                    self.draw_bg_image(bg_image)
+                    draw_manager.draw_bg_image(bg_image, screen)
                     self.handle_button_interaction(mouse_pos)
                 case GameState.SAVES:
                     bg_image = pygame.image.load(
                         "./core/assets/фоны/сохранения.png")
-                    self.draw_bg_image(bg_image)
+                    draw_manager.draw_bg_image(bg_image, screen)
                     self.handle_button_interaction(mouse_pos)
                 case GameState.HIVE:
                     bg_image = pygame.image.load(
                         "./core/assets/фоны/улей фон.png")
-                    self.draw_bg_image(bg_image)
+                    draw_manager.draw_bg_image(bg_image, screen)
                     self.handle_button_interaction(mouse_pos)
                     draw_manager.draw_currency_ui(screen, self.player)
                 case GameState.FOREST:
                     bg_image = pygame.image.load(
                         "./core/assets/фоны/фон меню областей.png")
-                    self.draw_bg_image(bg_image)
+                    draw_manager.draw_bg_image(bg_image, screen)
                     self.handle_button_interaction(mouse_pos)
                 case GameState.FLOWER:
                     self.current_room.visited = True
