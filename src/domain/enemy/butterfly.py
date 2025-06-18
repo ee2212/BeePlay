@@ -28,7 +28,7 @@ class Butterfly(Enemy):
         self.image = pygame.transform.scale(self.image, self.size)
         self.rect = self.image.get_rect(center=self.get_rand_pos(self._spawn_rect, self.spawn_shift))
 
-    def update(self, player_pos):
+    def update(self, player_pos): # move to the player
         dx = player_pos[0] - self.rect.centerx
         dy = player_pos[1] - self.rect.centery
         distance = (dx ** 2 + dy ** 2) ** 0.5

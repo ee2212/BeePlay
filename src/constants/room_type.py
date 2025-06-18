@@ -8,4 +8,4 @@ class RoomType(Enum):
     TREASURE = 4
     BOSS = 5
     START = 6
-    # SECRET = 7
+

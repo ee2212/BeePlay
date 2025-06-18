@@ -51,7 +51,7 @@ class Rat(Boss):
         self.projectiles_quantity = 3
         self.projectile_counter = 0
         self.projectile_properties = {
-            "projectile_damage": self.damage,
+            "projectile_damage": 10,
             "projectile_speed": 12,
             "projectile_poison_damage": self.poison_damage,
             "projectile_poison_time": self.poison_time,
@@ -87,9 +87,6 @@ class Rat(Boss):
                         self.travel_target_pos = player_pos
                         self.travel_direction = (
                                 Vector2(self.travel_target_pos) - Vector2(self.rect.center)).normalize()
-                case 7 | 8 | 9:
-                    self.phase = 3
-                    self.phase_cooldown_mult = 0.5 ** random.random()
 
             self.phase_ticks = int(self.phase_cooldown * self.phase_cooldown_mult)
 
@@ -141,8 +138,7 @@ class Rat(Boss):
                 self.rect.y += self.travel_direction.y * self.move_speed
 
                 return bullets
-            case 3:
-                pass
+
 
         return []
 

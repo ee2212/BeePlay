@@ -1,6 +1,6 @@
 import pygame
 
-from src.components.button import Button
+from src.components.buttons.button import Button
 
 
 class MultiButton(Button):

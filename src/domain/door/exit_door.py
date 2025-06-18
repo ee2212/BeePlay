@@ -1,6 +1,6 @@
 import pygame
 
-from src.managers.base_settings import screen_width, screen_height, room_width, room_height, poison_cooldown
+from src.managers.base_settings import screen_width, screen_height,  room_height
 from src.domain.door.door import Door
 
 

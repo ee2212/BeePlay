@@ -26,7 +26,7 @@ class Frog(Boss):
         self.max_health = 400
         self.health = self.max_health
         self.health_bar = HealthBar(screen_width // 2 - room_width // 2, screen_height // 2 - room_height // 2,
-                                    room_width, screen_height // 70, \
+                                    room_width, screen_height // 70, 
                                     self.max_health, pygame.Color(255, 87, 87), pygame.Color(79, 79, 79))
 
         self.damage = 15
@@ -46,7 +46,7 @@ class Frog(Boss):
         self.travel_target_pos = self.get_rand_pos(spawn_rect)
 
         self.projectile_properties = {
-            "projectile_damage": self.damage,
+            "projectile_damage": 8,
             "projectile_speed": 6,
             "projectile_poison_damage": self.poison_damage,
             "projectile_poison_time": self.poison_time,

@@ -43,7 +43,7 @@ class Artifact(pygame.sprite.Sprite):
                 'image': pygame.image.load("./core/assets/артефакты/гусеница.png"),
                 'companion': pygame.image.load("./core/assets/артефакты/гусеница.png"),
                 # image это иконка, а companion это спрайт для нпс.
-                'price': 400},  # Одинаковы потому что картинка имеется только одна. Увы
+                'price': 400}, 
             ArtifactType.HEDGEHOG: {
                 'name': ArtifactType.HEDGEHOG.value,
                 'image': pygame.image.load("./core/assets/артефакты/ёж.png"),
@@ -117,7 +117,7 @@ class Artifact(pygame.sprite.Sprite):
 
         for art_type in list(ArtifactType):
             boss_art = Artifact(art_type, position)
-            for property, value in boss_art.properties.items():
+            for property in boss_art.properties.items():
                 if property == "boss":
                     free_list.remove(boss_art.type)
 
