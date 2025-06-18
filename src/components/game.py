@@ -11,17 +11,15 @@ from src.domain.enemy.cockroach import Cockroach
 from src.domain.obstacle.obstacle import Obstacle
 from src.domain.player.player import Player
 from src.domain.projectile.projectile import Projectile
-from src.domain.room.boss_room import BossRoom
-from src.domain.room.combat_room import CombatRoom
-from src.domain.room.room import Room
-from src.domain.room.shop_room import ShopRoom
-from src.domain.room.treasure_room import TreasureRoom
+
 
 from pygame.math import Vector2
 
 from src.managers.base_settings import screen_width, screen_height, room_width, room_height, fps_limit
 from src.managers.save_manager import SavesSystem
 from src.managers.game_state_manager import GameStateManager, GameState
+from src.managers.generation_manager import GenerateManager
+from src.managers.draw_manager import DrawManager
 
 from src.constants.room_type import RoomType
 
@@ -31,7 +29,8 @@ pygame.init()
 
 save_manager = SavesSystem(".save", "saves")
 state_manager = GameStateManager()
-
+generate_manager = GenerateManager()
+draw_manager = DrawManager()
 # screen_width, screen_height = 1920, 1080
 screen = pygame.display.set_mode((screen_width, screen_height))
 clock = pygame.time.Clock()
@@ -54,252 +53,6 @@ class Game:
         self.current_area = 1
 
         self.add_buttons()
-
-    # ________________________________________________________________________
-
-    def generate_dungeon(self, location_level):
-        floorplan = [0] * (101 + 10 * location_level)
-        maxrooms = 7 + location_level * 2
-        minrooms = 5 + location_level
-        cellQueue = []
-        endrooms = []
-        floorplanCount = 0
-
-        def ncount(i):
-            n = 0
-            try:
-                n += floorplan[i - 10]  # checking bottom neighbour
-            except IndexError:
-                pass
-            try:
-                n += floorplan[i + 10]  # checking up neighbour
-            except IndexError:
-                pass
-            try:
-                n += floorplan[i - 1]  # checking left neighbour
-            except IndexError:
-                pass
-            try:
-                n += floorplan[i + 1]  # checking right neighbour
-            except IndexError:
-                pass
-            return n # number of neighbours
-
-        def visit(i):
-            nonlocal floorplanCount
-            if floorplan[i]: # excisting
-                return False
-            if ncount(i) > 1: # more than 1 neighbour
-                return False
-            if floorplanCount >= maxrooms:
-                return False
-            if random.random() < 0.5 and i != 45: # chance 50% to skip
-                return False
-
-            cellQueue.append(i) 
-            floorplan[i] = 1 # mark as excisting room
-
-            if floorplanCount == 0:
-                self.start_room = i # mark as starting
-            floorplanCount += 1
-            return True
-
-        def poprandomendroom():
-            if not endrooms:
-                return 10
-            if len(endrooms) == 1:
-                return endrooms.pop(0)
-            index = random.randint(0, len(endrooms) - 1)
-            return endrooms.pop(index)
-
-        visit(45)
-
-        while cellQueue:
-            i = cellQueue.pop(0)
-            x = i % 10
-            created = False
-            if x > 1:
-                created |= visit(i - 1) # left
-            if x < 9:
-                created |= visit(i + 1) # right
-            if i > 20:
-                created |= visit(i - 10) # bottom
-            if i < 70:
-                created |= visit(i + 10) # up
-            if not created:
-                endrooms.append(i)
-
-        if floorplanCount < minrooms:
-            return self.generate_dungeon(location_level)
-
-        bossl = endrooms.pop() # furthest from starting
-        treasurel = poprandomendroom()
-        shopl = poprandomendroom()
-        start1 = self.start_room
-
-        rooms = []
-        for i, val in enumerate(floorplan):
-            if val:
-                x = i % 10
-                y = (i - x) // 10
-                room_type = "normal"
-                if i == start1:
-                    room_type = "start"
-                    self.start_room = (x, y, room_type)
-                if i == bossl:
-                    room_type = "boss"
-                elif i == treasurel:
-                    room_type = "treasure"
-                elif i == shopl:
-                    room_type = "shop"
-                rooms.append((x, y, room_type))
-        return rooms
-
-    def generate_dungeon_objects(self):
-        self.rooms = {}
-        for (x, y, rtype) in self.map_rooms:
-            r = random.randint(1, 9)
-            if r <= 7: # 70% chance for combat room
-                room_type = RoomType.COMBAT
-                room = CombatRoom(room_type, (x, y))
-                room.add_enemies(self.current_area)
-            else:
-                room_type = RoomType.NORMAL
-                room = Room(room_type, (x, y))
-
-            if rtype == "boss":
-                room_type = RoomType.BOSS
-                room = BossRoom(room_type, (x, y))
-                room.add_boss(self.current_area)
-                room.add_exit_door()
-            elif rtype == "treasure":
-                room_type = RoomType.TREASURE
-                room = TreasureRoom(room_type, (x, y))
-            elif rtype == "shop":
-                room_type = RoomType.SHOP
-                room = ShopRoom(room_type, (x, y))
-            elif rtype == "start":
-                room_type = RoomType.START
-                room = Room(room_type, (x, y))
-
-            self.rooms[(x, y)] = room # save room
-
-        directions = {"up": (0, -1), "down": (0, 1),
-                      "left": (-1, 0), "right": (1, 0)}
-        
-        for (x, y), room in self.rooms.items():
-            for obstacle in range(random.randint(0, 3 + self.current_area)):
-                room.add_obstacle(room.rect)
-
-            for direction, (dx, dy) in directions.items(): # adding doors if neighbour excists
-                neighbor = (x + dx, y + dy)
-                if neighbor in self.rooms:
-                    room.add_door(direction, neighbor)
-
-        for (x, y, rtype) in self.map_rooms: # setting start room
-            if rtype == "start":
-                self.current_room = self.rooms[(x, y)] 
-                self.player.rect.center = self.current_room.rect.center
-                break
-
-    # ________________________________________________________________________
-
-    def draw_ui(self):
-        # fps counter
-        font = pygame.font.Font(None, 26)
-        text = font.render(str(int(clock.get_fps())), True, (255, 0, 0))
-        screen.blit(text, (screen_width - 20, 0))
-
-        self.draw_currency_ui()
-        self.draw_health_ui()
-        self.draw_artifacts_ui(self.player.current_bag,
-                               (0, screen_height - 60))
-
-    def draw_currency_ui(self):
-        font = pygame.font.Font(None, 36)
-        text = [
-            f"Пыльца: {self.player.pollen}",
-            f"Мёд: {self.player.honey}",
-        ]
-        for i, element in enumerate(text):
-            surface = font.render(element, True, (255, 255, 255))
-            screen.blit(surface, (10, 10 + i * 30)) # the margin is 30px
-
-    def draw_health_ui(self):
-        font = pygame.font.Font(None, 26)
-        text = font.render(
-            f"Здоровье: {self.player.health}", True, (255, 255, 255))
-        screen.blit(text, (screen_width // 2 - room_width // 2,
-                    screen_height // 2 + room_height // 2 + 15))
-        self.player.health_bar.draw(screen, 0) # player health
-
-        if self.current_room.room_type == RoomType.BOSS:
-            bosses_list = list(self.current_room.bosses)
-            for boss in bosses_list:
-                boss.health_bar.draw(screen, bosses_list.index(boss)) # boss health
-                text = font.render(
-                    f"Здоровье: {boss.health}", True, (255, 255, 255))
-                screen.blit(text, (screen_width // 2 - room_width // 
-                            2, screen_height // 2 - room_height // 2 - 17.5))
-
-    def draw_artifacts_ui(self, bag_number, pos):
-        artifacts_to_draw = []
-
-        for artifact in self.player.owned_artifacts[bag_number]: # collecting all images 
-            artifacts_to_draw.append(artifact.image)
-
-        for image in artifacts_to_draw:
-            mod_image = pygame.transform.scale(image, (50, 50))
-            screen.blit(
-                mod_image, (pos[0] + artifacts_to_draw.index(image) * 80 + 20, pos[1]), mod_image.get_rect())  # the margin is 30px
-
-    def draw_prices(self, prices, position):
-        font = pygame.font.Font(None, 30)
-        text = "Артефакты за мёд!"
-        surface = font.render(text, True, (255, 255, 255))
-        screen.blit(surface, (screen_width // 2 -
-                    100, screen_height // 2 - 150))
-
-        for i in range(0, len(prices)): # prices bottom artifacts
-            text = [f'{prices[i]}']
-            for t, text in enumerate(text):
-                surface = font.render(text, True, (255, 255, 255))
-                screen.blit(
-                    surface, (position[i][0] - 20, screen_height // 2 + 55 + t * 30))
-
-    def draw_minimap(self):
-        base_x = screen_width - 305 # right up
-        base_y = -20
-
-        for (x, y, room_type) in self.map_rooms:
-
-            rs = self.rooms
-            r = rs[(x, y)]
-            if r.visited == False: # not visited dark gray
-                color = (50, 50, 50)
-            else:
-                match room_type:
-                    case "normal":
-                        color = (100, 100, 100) # gray
-                    case "boss":
-                        color = (205, 0, 0) # red
-                    case "treasure":
-                        color = (205, 205, 0) # yellow
-                    case "shop":
-                        color = (205, 105, 0) # orange
-                    case "start":
-                        color = (150, 200, 150) # green
-                if r.current == True:
-                    color = (color[0] + 50, color[1] + 50, color[2] + 50) # highlighting current
-            px = base_x + x * 30
-            py = base_y + y * 30
-
-            s = pygame.Surface((28, 28)) # squares for rooms
-            s.set_alpha(128) # translucent
-            s.fill((color))
-            screen.blit(s, (px, py))
-
-    # ________________________________________________________________________
 
     def handle_room_interaction(self): # doors processing
         keys = pygame.key.get_pressed()
@@ -344,7 +97,7 @@ class Game:
                         self.current_room.artifacts.add(artl)
                     self.current_room.visited = True
                 self.draw_prices(self.current_room.prices,
-                                 self.current_room.prices_positions)
+                                 self.current_room.prices_positions, screen, screen_width, screen_height)
                 screen.blit(self.current_room.shopkeeper_image,
                             (screen_width // 2 - 35, screen_height // 2 - 125))
                 self.current_room.artifacts.draw(screen)
@@ -483,10 +236,11 @@ class Game:
                     if door.direction == "exit":
                         self.player.health = self.player.max_health
                         state_manager.change_state(GameState.FOREST)
-
+                        self.add_buttons()
+                        
                         if self.current_area < 5:
                             self.current_area += 1
-                            self.add_buttons()
+                            
 
                     else:
                         self.current_room.projectiles = pygame.sprite.Group() # clear projectiles
@@ -512,7 +266,9 @@ class Game:
                             for companion in self.player.companions:
                                 companion.rect.center = (
                                     self.player.rect.center[0], self.player.rect.center[1])
-
+                                
+                        
+                                
                         self.current_room.current = False
                         self.current_room = self.rooms[door.room_id]
                         self.current_room.current = True
@@ -641,8 +397,8 @@ class Game:
             if button.highlighted:
                 match button.button_type:
                     case "узелок":
-                        self.draw_artifacts_ui(int(button.button_number[-1:]) - 1, # drawind artifacts in highlighted bag
-                                               (button.rect.center[0] - 200, button.rect.center[1] - 100))
+                        draw_manager.draw_artifacts_ui(int(button.button_number[-1:]) - 1, # drawind artifacts in highlighted bag
+                                               (button.rect.center[0] - 200, button.rect.center[1] - 100), self.player, screen)
 
     def handle_button_click(self, mouse_pos):  # clicking buttons
         if self.interaction_ticks > 0:  # protection against frequent clicks
@@ -653,10 +409,12 @@ class Game:
                 if button.rect.collidepoint(mouse_pos):  # checking click
                     match button.button_type:
                         case "цветок":
-                            self.current_area = int(button.button_number)
-                            self.map_rooms = self.generate_dungeon(
-                                self.current_area)
-                            self.generate_dungeon_objects()
+                            self.map_rooms = generate_manager.generate_dungeon(self.current_area)
+                            self.rooms = generate_manager.generate_dungeon_objects(self.current_area, self.map_rooms)
+                            for (x, y, rtype) in self.map_rooms: # setting start room
+                                if rtype == "start":
+                                    self.current_room = self.rooms[(x, y)] 
+                                    self.player.rect.center = self.current_room.rect.center
                             state_manager.change_state(GameState.FLOWER)
                             self.add_buttons()
                         case "улей":
@@ -785,7 +543,7 @@ class Game:
                         "./core/assets/фоны/улей фон.png")
                     self.draw_bg_image(bg_image)
                     self.handle_button_interaction(mouse_pos)
-                    self.draw_currency_ui()
+                    draw_manager.draw_currency_ui(screen, self.player)
                 case GameState.FOREST:
                     bg_image = pygame.image.load(
                         "./core/assets/фоны/фон меню областей.png")
@@ -803,8 +561,8 @@ class Game:
                     self.current_room.doors.draw(screen)
                     if len(self.current_room.obstacles) > 0:
                         self.current_room.obstacles.draw(screen)
-                    self.draw_minimap()
-                    self.draw_ui()
+                    draw_manager.draw_minimap(self.map_rooms, self.rooms, screen)
+                    draw_manager.draw_ui(screen, self.current_room, self.player, clock, self.player.current_bag)
                     self.handle_room_interaction()
                     self.handle_player(mouse_pos)
 

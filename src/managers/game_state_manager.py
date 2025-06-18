@@ -1,4 +1,5 @@
 # managers/game_state_manager.py
+import pygame
 from enum import Enum
 
 
@@ -36,3 +37,4 @@ class GameStateManager:
             The current GameState.
         """
         return self.state
+    

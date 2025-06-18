@@ -23,7 +23,7 @@ class Wasp(Boss):
         self.image = pygame.transform.scale(self.image, self.scale)
         self.rect = self.image.get_rect(center=(screen_width // 2, screen_height // 2))
 
-        self._move_speed = 7
+        self._move_speed = 15
         self.max_health = 700
         self.health = self.max_health
         self.health_bar = HealthBar(screen_width // 2 - room_width // 2, screen_height // 2 - room_height // 2,

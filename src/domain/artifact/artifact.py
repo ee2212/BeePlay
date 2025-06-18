@@ -117,7 +117,7 @@ class Artifact(pygame.sprite.Sprite):
 
         for art_type in list(ArtifactType):
             boss_art = Artifact(art_type, position)
-            for property in boss_art.properties.items():
+            for property, value in boss_art.properties.items():
                 if property == "boss":
                     free_list.remove(boss_art.type)
 
